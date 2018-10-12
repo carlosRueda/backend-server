@@ -1,20 +1,25 @@
 // Requires ---> es para importar librerias propias o de terceros
 var express = require('express');
+var bcryptjs = require('bcryptjs');
 
 // inicializar variables
 var app = express();
+var Usuario = require('../models/Usuario');
+// var salt = bcryptjs.genSaltSync(10);
+// var hash = bcryptjs.hashSync("B4c0/\/", salt);
 
-var Usuario = require('../models/usuario');
-
-// rutas-->define elpath....q es elslash para la ruta
+// rutas-->define elpath....q es el slash para la ruta
 // el segundo parametro es el callback function y tiene 3 parámetros
 //    el request:
 //    el response:
 //    el next: le dice a express q cuando se ejecute continúe con otra función....normalmente se usa solo con midlewares.
 //             en los demás casi no se usan
+// =================================================
+// GET: aquí se Obtienen todos los usuarios almacenados 
+// =================================================
 app.get('/', (req, res, next) => {
 
-    Usuario.find({}, 'nombre, email, img, role')
+    Usuario.find({}, 'nombre email img role')
         .exec(
             (err, usuarios) => {
                 if (err) {
@@ -29,6 +34,8 @@ app.get('/', (req, res, next) => {
                     ok: true,
                     usuarios: usuarios
                 });
+
+
             });
     // res.status(200).json({
     //     ok: true,
@@ -37,4 +44,132 @@ app.get('/', (req, res, next) => {
 
 });
 
+// =================================================
+// PUT: ACTUALIZAR USUARIO----se puede put o patch
+// =================================================
+// así se declara el parámetro a recibir
+app.put('/:id', (req, res) => {
+
+    //tomar el id que llega como parámetro
+    var id = req.params.id;
+
+    //Toma los demás parámetros y los convierte en un objeto
+    var body = req.body;
+
+    //función para buscar un usuario
+    Usuario.findById(id, (err, usuario) => {
+        //se comprueba si hubo error
+        if (err) {
+            return res.status(500).json({
+                ok: false,
+                mensaje: 'Error al buscar Usuario',
+                errors: err
+            });
+        }
+
+        //se comprueba si existe en bd
+        if (!usuario) {
+            return res.status(400).json({
+                ok: false,
+                mensaje: 'El Usuario con el id ' + id + ' no existe',
+                errors: { message: 'No existe ningún usuario con ese Id' }
+            });
+        }
+
+        //se mapean los campos a modificar
+        usuario.nombre = body.nombre;
+        usuario.email = body.email;
+        usuario.role = body.role;
+
+        //función para guardar
+        usuario.save((err, usuarioGuardado) => {
+            if (err) {
+                return res.status(400).json({
+                    ok: false,
+                    mensaje: 'Error al actualizar Usuario',
+                    errors: err
+                });
+            }
+            usuarioGuardado.password = ':)';
+            res.status(200).json({
+                ok: true,
+                usuario: usuarioGuardado
+            });
+        });
+    });
+});
+
+
+// =================================================
+// POST: CREAR USUARIO
+// =================================================
+app.post('/', (req, res) => {
+    //hay una libreria que convierte un objeto json recibido por post y lo convierte en un objeto
+    //se llama body-parser 
+    //se instala npm install body-parser --save
+    //se declara bodyParser =require('boy-parser');
+    var body = req.body;
+
+    var usuario = new Usuario({
+        nombre: body.nombre,
+        email: body.email,
+        password: bcryptjs.hashSync(body.password, 10),
+        img: body.img,
+        role: body.role,
+    });
+
+    usuario.save((err, usuarioGuardado) => {
+
+        if (err) {
+            return res.status(400).json({
+                ok: false,
+                mensaje: 'Error al crear Usuario',
+                errors: err
+            });
+        }
+
+        res.status(201).json({
+            ok: true,
+            usuario: usuarioGuardado
+        });
+    });
+
+});
+
+
+// =================================================
+// DELETE: Borrar usuario por id
+// =================================================
+app.delete('/:id', (req, res) => {
+    //tomar el id que llega como parámetro
+    var id = req.params.id;
+
+    Usuario.findByIdAndRemove(id, (err, usuarioEliminado) => {
+
+        if (err) {
+            return res.status(500).json({
+                ok: false,
+                mensaje: 'Error al eliminar Usuario',
+                errors: err
+            });
+        }
+
+        if (!usuarioEliminado) {
+            return res.status(400).json({
+                ok: false,
+                mensaje: 'El Usuario con el id ' + id + ' no existe',
+                errors: { message: 'No existe ningún usuario con ese Id' }
+            });
+        }
+
+        usuarioEliminado.password = ':)';
+
+        res.status(200).json({
+            ok: true,
+            usuario: usuarioEliminado
+        });
+    });
+});
+
+// permite exportar la ruta
 module.exports = app;
