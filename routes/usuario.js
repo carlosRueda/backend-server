@@ -1,6 +1,10 @@
 // Requires ---> es para importar librerias propias o de terceros
 var express = require('express');
 var bcryptjs = require('bcryptjs');
+var jwt = require('jsonwebtoken');
+
+var mdAutenticacion = require('../middlewares/autenticacion');
+// var SEED = require('../config/config').SEED;
 
 // inicializar variables
 var app = express();
@@ -44,11 +48,35 @@ app.get('/', (req, res, next) => {
 
 });
 
+// // =================================================
+// // verificar token: se ubicó estratégicamente en este punto para hacer que las funciones que hay de aquí hacia abajo 
+// // tengan la verificación del token
+// // Middleware
+// // sin embargo esta no es la mejor ubicación...por lo que se pasó a middlewares/autenticacion.js
+// // =================================================
+// app.use('/', (req, res, next) => {
+//     var token = req.query.token;
+
+//     jwt.verify(token, SEED, (err, decoder) => {
+//         if (err) {
+//             return res.status(401).json({
+//                 ok: false,
+//                 mensaje: 'token Incorrecto',
+//                 errors: err
+//             });
+//         }
+
+//         // esta función permite decirle al servidor que continue la ejecución de la siguiente función
+//         next();
+//     })
+
+// });
+
 // =================================================
 // PUT: ACTUALIZAR USUARIO----se puede put o patch
 // =================================================
 // así se declara el parámetro a recibir
-app.put('/:id', (req, res) => {
+app.put('/:id', mdAutenticacion.verificaToken, (req, res) => {
 
     //tomar el id que llega como parámetro
     var id = req.params.id;
@@ -103,7 +131,7 @@ app.put('/:id', (req, res) => {
 // =================================================
 // POST: CREAR USUARIO
 // =================================================
-app.post('/', (req, res) => {
+app.post('/', mdAutenticacion.verificaToken, (req, res) => {
     //hay una libreria que convierte un objeto json recibido por post y lo convierte en un objeto
     //se llama body-parser 
     //se instala npm install body-parser --save
@@ -130,7 +158,8 @@ app.post('/', (req, res) => {
 
         res.status(201).json({
             ok: true,
-            usuario: usuarioGuardado
+            usuario: usuarioGuardado,
+            usuarioToken: req.usuario
         });
     });
 
@@ -139,8 +168,11 @@ app.post('/', (req, res) => {
 
 // =================================================
 // DELETE: Borrar usuario por id
+// se adicionó comoi parámetro la función de verifica 
+// token, que valida si es posible o no ejecutar esta
+//  unción 
 // =================================================
-app.delete('/:id', (req, res) => {
+app.delete('/:id', mdAutenticacion.verificaToken, (req, res) => {
     //tomar el id que llega como parámetro
     var id = req.params.id;
 
