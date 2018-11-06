@@ -16,6 +16,8 @@ app.use(bodyParser.json());
 // RUTAS: ahora se importan aquí
 var appRoutes = require('./routes/app');
 var usuarioRoutes = require('./routes/usuario');
+var hospitalRoutes = require('./routes/hospital');
+var medicoRoutes = require('./routes/medico');
 var loginRoutes = require('./routes/login');
 
 // conexión a la base de datos
@@ -39,6 +41,8 @@ mongoose.connection.openUri('mongodb://localhost:27017/hospitaldb', //{ useNewUr
 // y ahora se usa, importandolo arriba y eclarandolo de esta forma:
 app.use('/login', loginRoutes);
 app.use('/usuario', usuarioRoutes);
+app.use('/hospital', hospitalRoutes);
+app.use('/medico', medicoRoutes);
 app.use('/', appRoutes);
 
 //escucar peticiones...en ellisten se configura el puerto en elo que queremos que corra ka aplicación
